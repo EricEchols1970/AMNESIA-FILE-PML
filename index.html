@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amnesia File Engine — Portable Memory Layer (PML)</title>
+    <meta name="description" content="Amnesia File Engine — A Portable Memory Layer (PML) that gives AI agents persistent, searchable memory across model providers. Your memory belongs to you.">
+    <style>
+        :root {
+            --bg: #0a0e1a;
+            --surface: #111827;
+            --card: #1a2235;
+            --border: #2a3450;
+            --text: #e2e8f0;
+            --text-dim: #94a3b8;
+            --accent: #6366f1;
+            --accent-bright: #818cf8;
+            --green: #10b981;
+            --amber: #f59e0b;
+            --red: #ef4444;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+        /* NAV */
+        nav {
+            position: fixed; top: 0; width: 100%; z-index: 100;
+            background: rgba(10,14,26,0.85); backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 0;
+        }
+        nav .container { display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
+        .logo span { color: var(--accent-bright); }
+        nav ul { display: flex; gap: 32px; list-style: none; }
+        nav a { color: var(--text-dim); text-decoration: none; font-size: 14px; transition: color 0.2s; }
+        nav a:hover { color: var(--text); }
+        .nav-cta {
+            background: var(--accent); color: white; padding: 8px 20px;
+            border-radius: 8px; font-size: 14px; font-weight: 600;
+            border: none; cursor: pointer; text-decoration: none; transition: background 0.2s;
+        }
+        .nav-cta:hover { background: var(--accent-bright); }
+
+        /* HERO */
+        .hero { padding: 140px 0 80px; text-align: center; position: relative; }
+        .hero::before {
+            content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+            width: 600px; height: 600px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%);
+            z-index: 0;
+        }
+        .hero .container { position: relative; z-index: 1; }
+        .badge {
+            display: inline-block; padding: 6px 16px; border-radius: 20px;
+            background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.3);
+            color: var(--accent-bright); font-size: 13px; font-weight: 600;
+            margin-bottom: 24px;
+        }
+        .hero h1 {
+            font-size: clamp(36px, 6vw, 64px); font-weight: 800; line-height: 1.1;
+            margin-bottom: 24px; letter-spacing: -2px;
+        }
+        .hero h1 span { color: var(--accent-bright); }
+        .hero p {
+            font-size: 20px; color: var(--text-dim); max-width: 640px;
+            margin: 0 auto 40px; line-height: 1.6;
+        }
+        .hero-cta { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+        .btn-primary {
+            background: var(--accent); color: white; padding: 14px 32px;
+            border-radius: 10px; font-size: 16px; font-weight: 600;
+            border: none; cursor: pointer; text-decoration: none; transition: all 0.2s;
+        }
+        .btn-primary:hover { background: var(--accent-bright); transform: translateY(-2px); }
+        .btn-secondary {
+            background: transparent; color: var(--text); padding: 14px 32px;
+            border-radius: 10px; font-size: 16px; font-weight: 600;
+            border: 1px solid var(--border); cursor: pointer; text-decoration: none; transition: all 0.2s;
+        }
+        .btn-secondary:hover { border-color: var(--accent); background: rgba(99,102,241,0.05); }
+
+        /* VALUE PROP */
+        .value-prop {
+            background: var(--surface); padding: 60px 0; text-align: center;
+            border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+        }
+        .value-prop p {
+            font-size: 24px; font-weight: 600; max-width: 800px; margin: 0 auto;
+            line-height: 1.5;
+        }
+        .value-prop p span { color: var(--accent-bright); }
+
+        /* SECTIONS */
+        section { padding: 80px 0; }
+        .section-header { text-align: center; margin-bottom: 56px; }
+        .section-header h2 {
+            font-size: clamp(28px, 4vw, 40px); font-weight: 800; letter-spacing: -1px;
+            margin-bottom: 16px;
+        }
+        .section-header p { font-size: 18px; color: var(--text-dim); max-width: 600px; margin: 0 auto; }
+
+        /* PROBLEM */
+        .problem-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
+        .problem-card {
+            background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+            padding: 32px; transition: border-color 0.2s;
+        }
+        .problem-card:hover { border-color: var(--accent); }
+        .problem-card .icon { font-size: 32px; margin-bottom: 16px; }
+        .problem-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+        .problem-card p { color: var(--text-dim); font-size: 15px; }
+
+        /* ARCHITECTURE */
+        .arch-section { background: var(--surface); }
+        .arch-diagram {
+            background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+            padding: 48px; max-width: 700px; margin: 0 auto; font-family: 'Courier New', monospace;
+            font-size: 13px; line-height: 1.8; white-space: pre; overflow-x: auto;
+        }
+        .arch-layers { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px; margin-top: 48px; }
+        .arch-layer {
+            background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+            padding: 28px;
+        }
+        .arch-layer h3 { font-size: 16px; font-weight: 700; margin-bottom: 12px; color: var(--accent-bright); }
+        .arch-layer p { color: var(--text-dim); font-size: 14px; margin-bottom: 8px; }
+        .arch-layer ul { list-style: none; }
+        .arch-layer li { font-size: 14px; padding: 4px 0; color: var(--text-dim); }
+        .arch-layer li:before { content: '> '; color: var(--accent); }
+
+        /* THREE STORES */
+        .stores-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
+        .store-card {
+            background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+            padding: 32px; position: relative; overflow: hidden;
+        }
+        .store-card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+            background: var(--accent);
+        }
+        .store-card:nth-child(2)::before { background: var(--green); }
+        .store-card:nth-child(3)::before { background: var(--amber); }
+        .store-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+        .store-card .subtitle { font-size: 13px; color: var(--text-dim); margin-bottom: 16px; }
+        .store-card p { font-size: 14px; color: var(--text-dim); margin-bottom: 12px; }
+
+        /* MCP TOOLS */
+        .mcp-section { background: var(--surface); }
+        .tools-table { max-width: 800px; margin: 0 auto; }
+        .tool-row {
+            display: grid; grid-template-columns: 200px 1fr; gap: 24px;
+            padding: 20px 0; border-bottom: 1px solid var(--border); align-items: start;
+        }
+        .tool-row:last-child { border-bottom: none; }
+        .tool-name {
+            font-family: 'Courier New', monospace; font-size: 14px; font-weight: 700;
+            color: var(--accent-bright);
+        }
+        .tool-desc { font-size: 14px; color: var(--text-dim); }
+        .tool-desc strong { color: var(--text); font-weight: 600; }
+
+        /* SECURITY */
+        .security-layers { display: flex; flex-direction: column; gap: 0; max-width: 600px; margin: 0 auto; }
+        .sec-layer {
+            display: flex; align-items: center; gap: 20px; padding: 16px 24px;
+            background: var(--card); border: 1px solid var(--border);
+            border-bottom: none; position: relative;
+        }
+        .sec-layer:last-child { border-bottom: 1px solid var(--border); border-radius: 0 0 12px 12px; }
+        .sec-layer:first-child { border-radius: 12px 12px 0 0; }
+        .sec-num {
+            width: 32px; height: 32px; border-radius: 50%; background: var(--accent);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px; font-weight: 700; color: white; flex-shrink: 0;
+        }
+        .sec-layer h4 { font-size: 15px; font-weight: 600; }
+        .sec-layer p { font-size: 13px; color: var(--text-dim); }
+        .sec-layer-content { flex: 1; }
+
+        /* BYOK */
+        .byok-section { text-align: center; }
+        .byok-card {
+            background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+            padding: 48px; max-width: 700px; margin: 0 auto;
+        }
+        .byok-card h3 { font-size: 22px; font-weight: 700; margin-bottom: 16px; }
+        .byok-card p { font-size: 16px; color: var(--text-dim); margin-bottom: 16px; line-height: 1.7; }
+        .byok-quote {
+            font-size: 20px; font-weight: 600; font-style: italic;
+            color: var(--accent-bright); padding: 24px 0;
+            border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+            margin: 24px 0;
+        }
+
+        /* PRICING */
+        .pricing-section { background: var(--surface); }
+        .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+        .price-card {
+            background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+            padding: 32px; transition: transform 0.2s, border-color 0.2s;
+        }
+        .price-card:hover { transform: translateY(-4px); border-color: var(--accent); }
+        .price-card.featured { border-color: var(--accent); position: relative; }
+        .price-card.featured::after {
+            content: 'Most Popular'; position: absolute; top: -12px; left: 50%;
+            transform: translateX(-50%); background: var(--accent); color: white;
+            padding: 4px 16px; border-radius: 12px; font-size: 12px; font-weight: 600;
+        }
+        .price-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+        .price-card .price { font-size: 32px; font-weight: 800; margin-bottom: 4px; }
+        .price-card .price span { font-size: 16px; color: var(--text-dim); font-weight: 400; }
+        .price-card .price-note { font-size: 12px; color: var(--text-dim); margin-bottom: 20px; }
+        .price-card ul { list-style: none; }
+        .price-card li { font-size: 14px; padding: 6px 0; color: var(--text-dim); }
+        .price-card li:before { content: '> '; color: var(--green); font-weight: 700; }
+
+        /* ROADMAP */
+        .roadmap-timeline { max-width: 800px; margin: 0 auto; }
+        .roadmap-item {
+            display: flex; gap: 24px; padding: 20px 0; border-bottom: 1px solid var(--border);
+        }
+        .roadmap-item:last-child { border-bottom: none; }
+        .roadmap-num {
+            width: 40px; height: 40px; border-radius: 10px; background: var(--accent);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px; font-weight: 700; color: white; flex-shrink: 0;
+        }
+        .roadmap-content h4 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+        .roadmap-content p { font-size: 14px; color: var(--text-dim); }
+        .roadmap-content .quarter { font-size: 12px; color: var(--accent-bright); font-weight: 600; }
+
+        /* HONEST STATEMENT */
+        .honest-section { text-align: center; }
+        .honest-card {
+            background: var(--card); border: 1px solid var(--amber); border-radius: 12px;
+            padding: 40px; max-width: 700px; margin: 0 auto;
+        }
+        .honest-card .label {
+            display: inline-block; padding: 4px 12px; border-radius: 6px;
+            background: rgba(245,158,11,0.15); color: var(--amber);
+            font-size: 12px; font-weight: 700; margin-bottom: 16px;
+        }
+        .honest-card p { font-size: 16px; color: var(--text-dim); line-height: 1.7; }
+
+        /* CTA */
+        .cta-section {
+            text-align: center; padding: 100px 0;
+            background: linear-gradient(180deg, var(--bg) 0%, var(--surface) 100%);
+        }
+        .cta-section h2 {
+            font-size: clamp(28px, 4vw, 40px); font-weight: 800; margin-bottom: 16px;
+        }
+        .cta-section p { font-size: 18px; color: var(--text-dim); margin-bottom: 40px; }
+
+        /* FOOTER */
+        footer { background: var(--surface); border-top: 1px solid var(--border); padding: 48px 0; }
+        footer .container { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+        footer .logo { margin-bottom: 8px; }
+        footer p { font-size: 14px; color: var(--text-dim); text-align: center; }
+        footer .founder { font-size: 13px; color: var(--text-dim); margin-top: 8px; }
+
+        /* MOBILE */
+        @media (max-width: 768px) {
+            nav ul { display: none; }
+            .hero { padding: 120px 0 60px; }
+            .arch-diagram { font-size: 11px; padding: 24px; }
+            .tool-row { grid-template-columns: 1fr; gap: 8px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+    <div class="container">
+        <div class="logo">Amnesia<span>File</span></div>
+        <ul>
+            <li><a href="#problem">Problem</a></li>
+            <li><a href="#architecture">Architecture</a></li>
+            <li><a href="#security">Security</a></li>
+            <li><a href="#pricing">Pricing</a></li>
+            <li><a href="#roadmap">Roadmap</a></li>
+        </ul>
+        <a class="nav-cta" href="https://github.com/EricEchols1970/AMNESIA-FILE-PML" target="_blank">GitHub</a>
+    </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+    <div class="container">
+        <div class="badge">Portable Memory Layer (PML)</div>
+        <h1>AI has amnesia.<br><span>Amnesia File</span> is the cure.</h1>
+        <p>A gateway-based memory system that gives AI agents persistent, searchable, portable memory across any model provider. Your memory belongs to you.</p>
+        <div class="hero-cta">
+            <a class="btn-primary" href="#architecture">See the Architecture</a>
+            <a class="btn-secondary" href="https://github.com/EricEchols1970/AMNESIA-FILE-PML" target="_blank">View on GitHub</a>
+        </div>
+    </div>
+</div>
+
+<!-- VALUE PROP -->
+<div class="value-prop">
+    <div class="container">
+        <p>Amnesia File doesn't replace your AI providers. It <span>sits above them</span> and makes your organizational memory portable across them.</p>
+    </div>
+</div>
+
+<!-- PROBLEM -->
+<section id="problem">
+    <div class="container">
+        <div class="section-header">
+            <h2>The Amnesia Problem</h2>
+            <p>Every AI model starts each conversation with a blank slate. No memory of prior sessions, decisions, relationships, or context.</p>
+        </div>
+        <div class="problem-grid">
+            <div class="problem-card">
+                <div class="icon">🧠</div>
+                <h3>No Persistent Memory</h3>
+                <p>Every new conversation starts blank. Prior decisions, context, and relationships are lost. AI can't build on what it already learned.</p>
+            </div>
+            <div class="problem-card">
+                <div class="icon">🔒</div>
+                <h3>Vendor Lock-In</h3>
+                <p>Memory stored inside one model provider is trapped there. Switching from GPT to Claude means starting over. Your data isn't yours.</p>
+            </div>
+            <div class="problem-card">
+                <div class="icon">📈</div>
+                <h3>Context Explosions</h3>
+                <p>Stuffing full history into every prompt doesn't scale. Token costs grow linearly with history. Retrieval-based memory breaks that curve.</p>
+            </div>
+            <div class="problem-card">
+                <div class="icon">🏢</div>
+                <h3>No Enterprise Controls</h3>
+                <p>No tenant isolation. No RBAC. No audit trail. No export. Enterprise AI memory needs security architecture, not a bolt-on.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ARCHITECTURE -->
+<section id="architecture" class="arch-section">
+    <div class="container">
+        <div class="section-header">
+            <h2>The PML Architecture</h2>
+            <p>A Memory Gateway sits between clients/agents and model providers. It controls retrieval, writes, authorization, tenant isolation, and export.</p>
+        </div>
+        <div class="arch-diagram">                    AMNESIA FILE
+                 PORTABLE MEMORY LAYER
+                         |
+             +-----------+-----------+
+             |    Memory Gateway     |
+             |                       |
+             | Auth / RBAC / Policy  |
+             | Retrieval / Ranking   |
+             | Memory Write Engine   |
+             | Model Adapters        |
+             | Audit / Observability |
+             +-----------+-----------+
+                         |
+          +--------------+--------------+
+          |              |              |
+          v              v              v
+   Structured State  Semantic    Event /
+       Store        Memory      Milestones
+                         |
+                         v
+                 MCP-Compatible
+                 Memory Interface
+                         |
+       +-----------------+-----------------+
+       |                 |                 |
+       v                 v                 v
+      GPT            Claude            Gemini
+       |                 |                 |
+       +-----------------+-----------------+
+                         v
+                  Local / Private AI</div>
+        <div class="arch-layers">
+            <div class="arch-layer">
+                <h3>Memory Gateway</h3>
+                <p>The core metered infrastructure through which Amnesia File delivers portable enterprise memory.</p>
+                <ul>
+                    <li>Auth / RBAC / Policy</li>
+                    <li>Retrieval / Ranking</li>
+                    <li>Memory Write Engine</li>
+                    <li>Model Adapters</li>
+                    <li>Audit / Observability</li>
+                    <li>Export Engine</li>
+                </ul>
+            </div>
+            <div class="arch-layer">
+                <h3>Model Adapters</h3>
+                <p>Pluggable interface for any model provider. Adding a provider means implementing one interface — no memory system changes.</p>
+                <ul>
+                    <li>OpenAI (GPT-4o, o1, o3)</li>
+                    <li>Anthropic (Claude 3.5)</li>
+                    <li>Google (Gemini 1.5, 2.0)</li>
+                    <li>Local (Ollama, vLLM)</li>
+                    <li>Future providers</li>
+                </ul>
+            </div>
+            <div class="arch-layer">
+                <h3>MCP Interface</h3>
+                <p>Model Context Protocol compatible. Any MCP-aware agent uses PML as a memory provider — no custom adapters needed.</p>
+                <ul>
+                    <li>memory.search</li>
+                    <li>memory.get_state</li>
+                    <li>memory.store</li>
+                    <li>memory.update</li>
+                    <li>memory.export</li>
+                    <li>memory.delete</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- THREE STORES -->
+<section id="stores">
+    <div class="container">
+        <div class="section-header">
+            <h2>Three Memory Stores</h2>
+            <p>Memory lives outside the model in three complementary stores. The model retrieves only what it needs.</p>
+        </div>
+        <div class="stores-grid">
+            <div class="store-card">
+                <h3>Structured State Store</h3>
+                <div class="subtitle">Authoritative current state</div>
+                <p>Stores what is true now: current entity state, key-value pairs, task/project/org status.</p>
+                <p>Overwritten on state change. Previous values archived to Event Store automatically.</p>
+                <p>Schema: Document/JSON with typed fields per entity class.</p>
+            </div>
+            <div class="store-card">
+                <h3>Semantic Memory Store</h3>
+                <div class="subtitle">Searchable historical knowledge</div>
+                <p>Stores conversation summaries, embeddings, historical context, and background knowledge.</p>
+                <p>Vector-indexed for semantic retrieval. Supports similarity search, keyword search, and hybrid retrieval.</p>
+                <p>Schema: Vector embeddings + metadata + original text.</p>
+            </div>
+            <div class="store-card">
+                <h3>Event / Milestone Store</h3>
+                <div class="subtitle">Immutable decision log</div>
+                <p>Stores state transitions, decision records, and milestone markers.</p>
+                <p>Append-only. Never modified or deleted. Complete provenance and audit trail.</p>
+                <p>Schema: Event log with timestamp, actor, type, before/after diff, rationale.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- MCP TOOLS -->
+<section class="mcp-section" id="mcp">
+    <div class="container">
+        <div class="section-header">
+            <h2>MCP Tool Surface</h2>
+            <p>Seven core tools that any MCP-compatible host can use. No custom adapters required.</p>
+        </div>
+        <div class="tools-table">
+            <div class="tool-row">
+                <div class="tool-name">memory.search</div>
+                <div class="tool-desc"><strong>Primary retrieval (semantic + hybrid).</strong> Returns ranked chunks + optional current state. Decouples per-turn context from total history size.</div>
+            </div>
+            <div class="tool-row">
+                <div class="tool-name">memory.get_state</div>
+                <div class="tool-desc"><strong>Fetch authoritative structured state.</strong> Lightweight. Returns current task/project/org state as small JSON object.</div>
+            </div>
+            <div class="tool-row">
+                <div class="tool-name">memory.store</div>
+                <div class="tool-desc"><strong>Write new memory.</strong> Auto-routes to correct store based on type (fact, decision, event, state_update). Supports structured extraction.</div>
+            </div>
+            <div class="tool-row">
+                <div class="tool-name">memory.update</div>
+                <div class="tool-desc"><strong>Correct or supersede existing memory.</strong> Maintains provenance. Supersedes, doesn't overwrite silently. Records reason for change.</div>
+            </div>
+            <div class="tool-row">
+                <div class="tool-name">memory.list</div>
+                <div class="tool-desc"><strong>Browse and filter memories.</strong> For exploration and admin use. Supports pagination, tags, time range, and store filters.</div>
+            </div>
+            <div class="tool-row">
+                <div class="tool-name">memory.export</div>
+                <div class="tool-desc"><strong>Full or scoped export (anti-lock-in).</strong> Documented open schema. Enables self-hosting or migration. Requires export role.</div>
+            </div>
+            <div class="tool-row">
+                <div class="tool-name">memory.delete</div>
+                <div class="tool-desc"><strong>Scoped deletion.</strong> Requires admin role. Strongly gated by RBAC. Audit-logged. Records deletion in Event Store.</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- SECURITY -->
+<section id="security">
+    <div class="container">
+        <div class="section-header">
+            <h2>Security is Architecture, Not Marketing</h2>
+            <p>Seven layers, enforced in order, on every request. Tenant isolation at the storage layer, not just the API.</p>
+        </div>
+        <div class="security-layers">
+            <div class="sec-layer">
+                <div class="sec-num">1</div>
+                <div class="sec-layer-content">
+                    <h4>Tenant Isolation</h4>
+                    <p>Every request scoped to a tenant ID. Cross-tenant access structurally impossible at storage layer.</p>
+                </div>
+            </div>
+            <div class="sec-layer">
+                <div class="sec-num">2</div>
+                <div class="sec-layer-content">
+                    <h4>Authentication</h4>
+                    <p>API key or OAuth 2.0 token required on every request. Failed attempts rate-limited and logged.</p>
+                </div>
+            </div>
+            <div class="sec-layer">
+                <div class="sec-num">3</div>
+                <div class="sec-layer-content">
+                    <h4>Authorization (RBAC)</h4>
+                    <p>Roles: admin, writer, reader, export. Policies evaluated per-request, not cached.</p>
+                </div>
+            </div>
+            <div class="sec-layer">
+                <div class="sec-num">4</div>
+                <div class="sec-layer-content">
+                    <h4>Scoped Session Credentials</h4>
+                    <p>Short-lived tokens (15-60 min TTL) scoped to specific operations. Revocable by admin at any time.</p>
+                </div>
+            </div>
+            <div class="sec-layer">
+                <div class="sec-num">5</div>
+                <div class="sec-layer-content">
+                    <h4>Encryption</h4>
+                    <p>AES-256 at rest. TLS 1.3 in transit. Per-tenant keys with rotation support.</p>
+                </div>
+            </div>
+            <div class="sec-layer">
+                <div class="sec-num">6</div>
+                <div class="sec-layer-content">
+                    <h4>Audit Trail</h4>
+                    <p>Every read, write, export, and admin action logged. Append-only. Immutable.</p>
+                </div>
+            </div>
+            <div class="sec-layer">
+                <div class="sec-num">7</div>
+                <div class="sec-layer-content">
+                    <h4>Key Management</h4>
+                    <p>Per-tenant encryption keys. KMS-backed. Rotation with zero downtime.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- BYOK -->
+<section class="byok-section">
+    <div class="container">
+        <div class="section-header">
+            <h2>Bring Your Own Key (BYOK)</h2>
+        </div>
+        <div class="byok-card">
+            <h3>Default Enterprise Model</h3>
+            <p>Amnesia File charges for the PML infrastructure. The customer maintains its own relationship and billing with the underlying model provider (OpenAI, Anthropic, Google, etc.).</p>
+            <div class="byok-quote">"Amnesia File doesn't replace your AI providers. It sits above them and makes your organizational memory portable across them."</div>
+            <p>This avoids turning Amnesia File into a pass-through billing operation before the gateway economics are proven. An optional managed-routing product will be offered later where Amnesia File handles provider billing with a transparent usage margin.</p>
+        </div>
+    </div>
+</section>
+
+<!-- HONEST STATEMENT -->
+<section class="honest-section">
+    <div class="container">
+        <div class="section-header">
+            <h2>Radical Transparency</h2>
+        </div>
+        <div class="honest-card">
+            <div class="label">HONEST SECURITY STATEMENT</div>
+            <p>Once plaintext memory is deliberately sent to an external model provider for processing, that provider can access and process that plaintext. PML does not claim to protect memory from the model provider it is sent to.</p>
+            <p style="margin-top: 16px;">PML protects memory at rest, in transit, and from unauthorized access — but cannot control what an external provider does with plaintext it receives. This transparency is a trust feature, not a liability.</p>
+        </div>
+    </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing-section" id="pricing">
+    <div class="container">
+        <div class="section-header">
+            <h2>Pricing</h2>
+            <p>Gateway-based SaaS. Priced on real infrastructure cost drivers, not arbitrary token quotas. BYOK default.</p>
+        </div>
+        <div class="pricing-grid">
+            <div class="price-card">
+                <h3>Developer</h3>
+                <div class="price">$200<span>/mo</span></div>
+                <div class="price-note">Draft hypothesis</div>
+                <ul>
+                    <li>5 active tenant seats</li>
+                    <li>50K gateway requests/mo</li>
+                    <li>10K retrieval ops/mo</li>
+                    <li>10 GB stored memory</li>
+                    <li>1 model adapter</li>
+                    <li>BYOK required</li>
+                    <li>Community support</li>
+                </ul>
+            </div>
+            <div class="price-card featured">
+                <h3>Team</h3>
+                <div class="price">$900<span>/mo</span></div>
+                <div class="price-note">Draft hypothesis</div>
+                <ul>
+                    <li>25 active tenant seats</li>
+                    <li>400K gateway requests/mo</li>
+                    <li>100K retrieval ops/mo</li>
+                    <li>100 GB stored memory</li>
+                    <li>Up to 3 model adapters</li>
+                    <li>BYOK + RBAC</li>
+                    <li>90-day audit retention</li>
+                    <li>Email support, 24hr SLA</li>
+                </ul>
+            </div>
+            <div class="price-card">
+                <h3>Enterprise</h3>
+                <div class="price">$4,500<span>/mo</span></div>
+                <div class="price-note">Draft hypothesis</div>
+                <ul>
+                    <li>250 active tenant seats</li>
+                    <li>3M gateway requests/mo</li>
+                    <li>750K retrieval ops/mo</li>
+                    <li>1 TB stored memory</li>
+                    <li>Unlimited adapters</li>
+                    <li>Dedicated tenant isolation</li>
+                    <li>Full audit + export/self-host</li>
+                    <li>SOC 2 readiness docs</li>
+                    <li>4hr SLA</li>
+                </ul>
+            </div>
+            <div class="price-card">
+                <h3>Private Cloud</h3>
+                <div class="price">$18,000<span>/mo+</span></div>
+                <div class="price-note">Negotiated</div>
+                <ul>
+                    <li>Unlimited seats</li>
+                    <li>Custom volume</li>
+                    <li>Single-tenant deployment</li>
+                    <li>Custom adapter development</li>
+                    <li>Dedicated security review</li>
+                    <li>Compliance support</li>
+                    <li>Named technical account mgr</li>
+                </ul>
+            </div>
+        </div>
+        <p style="text-align: center; margin-top: 32px; font-size: 14px; color: var(--text-dim);">
+            All pricing numbers are draft hypotheses, not validated market prices. To be validated by M10 benchmarks and market research.
+        </p>
+    </div>
+</section>
+
+<!-- ROADMAP -->
+<section id="roadmap">
+    <div class="container">
+        <div class="section-header">
+            <h2>12-Month Roadmap</h2>
+            <p>From specification to production enterprise launch. Overlapping parallel workstreams.</p>
+        </div>
+        <div class="roadmap-timeline">
+            <div class="roadmap-item">
+                <div class="roadmap-num">M1</div>
+                <div class="roadmap-content">
+                    <h4>PML Core Specification</h4>
+                    <p>Data schemas, API contracts, adapter interface, MCP tool definitions</p>
+                    <div class="quarter">Q1 / Weeks 1-4</div>
+                </div>
+            </div>
+            <div class="roadmap-item">
+                <div class="roadmap-num">M2</div>
+                <div class="roadmap-content">
+                    <h4>Memory Gateway Alpha</h4>
+                    <p>Auth, request routing, basic read/write for 1 test tenant</p>
+                    <div class="quarter">Q1 / Weeks 3-10</div>
+                </div>
+            </div>
+            <div class="roadmap-item">
+                <div class="roadmap-num">M3</div>
+                <div class="roadmap-content">
+                    <h4>Structured + Semantic Memory</h4>
+                    <p>State store, vector store, retrieval engine, write engine</p>
+                    <div class="quarter">Q1-Q2 / Weeks 8-16</div>
+                </div>
+            </div>
+            <div class="roadmap-item">
+                <div class="roadmap-num">M4</div>
+                <div class="roadmap-content">
+                    <h4>First Model Adapter + MCP Interface</h4>
+                    <p>End-to-end agent session using gateway memory via MCP</p>
+                    <div class="quarter">Q2 / Weeks 14-20</div>
+                </div>
+            </div>
+            <div class="roadmap-item">
+                <div class="roadmap-num">M5</div>
+                <div class="roadmap-content">
+                    <h4>Multi-Provider Interoperability</h4>
+                    <p>Same memory corpus usable across GPT, Claude, Gemini, and local models</p>
+                    <div class="quarter">Q2 / Weeks 18-26</div>
+                </div>
+            </div>
+            <div class="roadmap-item">
+                <div class="roadmap-num">M6</div>
+                <div class="roadmap-content">
+                    <h4>Security Architecture Validation</h4>
+                    <p>Tenant isolation, encryption, key management. Passes internal pen test.</p>
+                    <div class="quarter">Q2-Q3 / Weeks 22-28</div>
+                </div>
+            </div>
+            <div class="roadmap-item">
+                <div class="roadmap-num">M7</div>
+                <div class="roadmap-content">
+                    <h4>Enterprise Tenant / RBAC Layer</h4>
+                    <p>Multi-tenant management, role-based access, scoped sessions</p>
+                    <div class="quarter">Q3 / Weeks 26-34</div>
+                </div>
+            </div>
+            <div class="roadmap-item">
+                <div class="roadmap-num">M8</div>
+                <div class="roadmap-content">
+                    <h4>Observability + Audit + Export</h4>
+                    <p>Full observability, audit search, memory export, self-host guide</p>
+                    <div class="quarter">Q3 / Weeks 30-38</div>
+                </div>
+            </div>
+            <div class="roadmap-item">
+                <div class="roadmap-num">M9</div>
+                <div class="roadmap-content">
+                    <h4>Enterprise Private Beta</h4>
+                    <p>3-5 design partners running real workloads in production</p>
+                    <div class="quarter">Q3-Q4 / Weeks 36-42</div>
+                </div>
+            </div>
+            <div class="roadmap-item">
+                <div class="roadmap-num">M10</div>
+                <div class="roadmap-content">
+                    <h4>Scale / Load Testing</h4>
+                    <p>Load tests, retrieval benchmarks, real cost-to-serve data</p>
+                    <div class="quarter">Q4 / Weeks 40-46</div>
+                </div>
+            </div>
+            <div class="roadmap-item">
+                <div class="roadmap-num">M11</div>
+                <div class="roadmap-content">
+                    <h4>Security & Compliance Readiness</h4>
+                    <p>SOC 2 readiness, third-party pen test, compliance docs</p>
+                    <div class="quarter">Q4 / Weeks 44-50</div>
+                </div>
+            </div>
+            <div class="roadmap-item">
+                <div class="roadmap-num">M12</div>
+                <div class="roadmap-content">
+                    <h4>Production Enterprise Launch</h4>
+                    <p>GA release, pricing live, first paying enterprise customer</p>
+                    <div class="quarter">Q4 / Weeks 48-52</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA -->
+<div class="cta-section">
+    <div class="container">
+        <h2>Your memory belongs to you.</h2>
+        <p>Portable. Secure. Model-agnostic. Open schema. Export anytime.</p>
+        <div class="hero-cta">
+            <a class="btn-primary" href="https://github.com/EricEchols1970/AMNESIA-FILE-PML" target="_blank">View Full Documentation</a>
+        </div>
+    </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+    <div class="container">
+        <div class="logo">Amnesia<span>File</span></div>
+        <p>Portable Memory Layer (PML) — A gateway-based memory system for AI agents.</p>
+        <p>Owner and Founder: Eric Marlon Echols</p>
+        <p class="founder">MIT License, 2026 Eric Marlon Echols</p>
+    </div>
+</footer>
+
+</body>
+</html>
